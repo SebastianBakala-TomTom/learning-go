@@ -63,8 +63,8 @@ func (*Pillar) Store(d *Data) error {
 
 // System wraps Xenia and Pillar together into a single system.
 type System struct {
-	Xenia
-	Pillar
+	Puller
+	Storer
 }
 
 // =============================================================================
@@ -80,15 +80,9 @@ type Storer interface {
 	Store(d *Data) error
 }
 
-// PullStorer  declares behavior for both pulling and storing.
-type PullStorer interface {
-	Puller
-	Storer
-}
-
 // =============================================================================
 
-// pull knows how to pull bulks of data from Xenia.
+// pull knows how to pull bulks of data from any data that implements Puller interface.
 func pull(p Puller, data []Data) (int, error) {
 	for i := range data {
 		if err := p.Pull(&data[i]); err != nil {
@@ -99,7 +93,7 @@ func pull(p Puller, data []Data) (int, error) {
 	return len(data), nil
 }
 
-// store knows how to store bulks of data into Pillar.
+// store knows how to store bulks of data into any data that implements Storer interface.
 func store(s Storer, data []Data) (int, error) {
 	for i := range data {
 		if err := s.Store(&data[i]); err != nil {
@@ -110,14 +104,14 @@ func store(s Storer, data []Data) (int, error) {
 	return len(data), nil
 }
 
-// Copy knows how to pull and store data from the System.
-func Copy(ps PullStorer, batch int) error {
+// Copy knows how to pull and store data from the PullStorer.
+func Copy(sys *System, batch int) error {
 	data := make([]Data, batch)
 
 	for {
-		i, err := pull(ps, data)
+		i, err := pull(sys, data)
 		if i > 0 {
-			if _, err := store(ps, data[:i]); err != nil {
+			if _, err := store(sys, data[:i]); err != nil {
 				return err
 			}
 		}
@@ -132,11 +126,11 @@ func Copy(ps PullStorer, batch int) error {
 
 func main() {
 	sys := System{
-		Xenia: Xenia{
+		Puller: &Xenia{
 			Host:    "localhost:8000",
 			Timeout: time.Second,
 		},
-		Pillar: Pillar{
+		Storer: &Pillar{
 			Host:    "localhost:9000",
 			Timeout: time.Second,
 		},
