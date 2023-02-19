@@ -14,7 +14,7 @@ func main() {
 	}
 
 	// NOT EXPORTED FIELD
-	// ./example.go:16: unknown users.User field 'password' in structure User
+	// ./example.go:16: unknown users.User field 'password' in struct literal
 
 	fmt.Printf("User: %#v\n", user)
 }
